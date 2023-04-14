@@ -14,7 +14,7 @@ class Listing(models.Model):
 class Room(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE)
     room_type = models.CharField(max_length=50)
-    room_number = models.CharField(max_length=10)
+    room_number = models.CharField(max_length=10, unique=True)
     price_per_night = models.DecimalField(max_digits=6, decimal_places=2)
 
     def __str__(self):
