@@ -9,6 +9,9 @@ __pycache__/
 # IDE
 .idea/
 
+# ignore migrations
+*/migrations/*.py
+
 # Distribution / packaging
 .Python
 build/
