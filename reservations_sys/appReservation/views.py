@@ -94,7 +94,8 @@ class RoomViewSet(viewsets.ModelViewSet):
             ~Q(
                 reservation__start_time__lt=end_time,
                 reservation__end_time__gt=start_time
-               ))
+            )
+        )
 
         # If a listing ID was provided in the URL,
         # filter the queryset by that ID
@@ -174,9 +175,9 @@ class BookedRoomsText(generics.ListAPIView):
         # Create the text response
         response_data = '\n'.join(
             [
-                f"Room {reservation.room.room_number}: " +
-                f"{reservation.name} " +
-                f"({reservation.start_time.strftime('%Y-%m-%d %H:%M')} - " +
+                f"Room {reservation.room.room_number}: "
+                f"{reservation.name} "
+                f"({reservation.start_time.strftime('%Y-%m-%d %H:%M')} - "
                 f"{reservation.end_time.strftime('%Y-%m-%d %H:%M')})"
                 for reservation in queryset
             ])
