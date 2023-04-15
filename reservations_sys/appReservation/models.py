@@ -18,7 +18,7 @@ class Room(models.Model):
     price_per_night = models.DecimalField(max_digits=6, decimal_places=2)
 
     def __str__(self):
-        return f"{self.listing.name} - {self.room_type}"
+        return f"{self.room_number}"
 
 
 class Reservation(models.Model):
