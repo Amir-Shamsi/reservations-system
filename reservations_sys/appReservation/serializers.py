@@ -12,9 +12,15 @@ class ReservationSerializer(serializers.ModelSerializer):
     # Validate reservation times
     def validate(self, data):
         if data['start_time'] > data['end_time']:
-            raise serializers.ValidationError('Reservation end time must exceeds the start time.')
+            raise serializers.ValidationError(
+                'Reservation end time must exceeds the start time.'
+            )
+
         if data['start_time'] < timezone.now():
-            raise serializers.ValidationError('Start time cannot be before the current time.')
+            raise serializers.ValidationError(
+                'Start time cannot be before the current time.'
+            )
+
         return data
 
 
@@ -36,4 +42,3 @@ class ListingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Listing
         fields = ['id', 'name']
-

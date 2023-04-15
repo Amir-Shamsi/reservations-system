@@ -6,9 +6,12 @@ from rest_framework import viewsets, status, generics
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from .paginations import Pagination
-from .serializers import ListingSerializer, ReservationSerializer, RoomAvailabilitySerializer
+from .serializers import \
+    ListingSerializer, \
+    ReservationSerializer, \
+    RoomAvailabilitySerializer
 from django.db.models import Q
-from .models import *
+from .models import Listing, Reservation, Room
 from .serializers import RoomSerializer
 
 
@@ -36,19 +39,33 @@ class ReservationViewSet(viewsets.ModelViewSet):  # Done
         end_time = serializer.validated_data['end_time']
 
         # Checking if the room is already reserved for the requested time
-        if Reservation.objects.filter(room=room, start_time__lt=end_time, end_time__gt=start_time).exists():
+        if Reservation.objects.filter(
+                room=room,
+                start_time__lt=end_time,
+                end_time__gt=start_time
+        ).exists():
+            error_msg = 'This room is already reserved for the requested time.'
             return Response(
-                {'error': 'This room is already reserved for the requested time.'},
+                {
+                    'error': error_msg
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         # Saving the reservation instance
         reservation = serializer.save(room=room)
         headers = self.get_success_headers(serializer.data)
-        reservation_data = self.serializer_class(reservation, context={'room': room}).data
+        reservation_data = self.serializer_class(
+            reservation,
+            context={'room': room}
+        ).data
 
-        return Response({**reservation_data, 'room': RoomSerializer(room).data}, status=status.HTTP_201_CREATED,
-                        headers=headers)
+        return Response({
+            **reservation_data,
+            'room': RoomSerializer(room).data},
+            status=status.HTTP_201_CREATED,
+            headers=headers)
+
 
 # ViewSet to get Rooms
 class RoomViewSet(viewsets.ModelViewSet):
@@ -73,12 +90,19 @@ class RoomViewSet(viewsets.ModelViewSet):
         end_time = serializer.validated_data['end_time']
 
         # Get the list of available rooms for the given time range
-        queryset = Room.objects.filter(~Q(reservation__start_time__lt=end_time, reservation__end_time__gt=start_time))
+        queryset = Room.objects.filter(
+            ~Q(
+                reservation__start_time__lt=end_time,
+                reservation__end_time__gt=start_time
+               ))
 
-        # If a listing ID was provided in the URL, filter the queryset by that ID
+        # If a listing ID was provided in the URL,
+        # filter the queryset by that ID
         listing_pk = self.kwargs.get('listing_pk')
         if listing_pk:
-            queryset = queryset.filter(listing_id=self.kwargs['listing_pk'])
+            queryset = queryset.filter(
+                listing_id=self.kwargs['listing_pk']
+            )
 
         # Serialize the queryset and return the response
         serializer = RoomSerializer(queryset, many=True)
@@ -101,20 +125,31 @@ class BookedRoomsHTML(generics.ListAPIView):
 
     def get_queryset(self):
         # Get the reservations for the rooms owned by the user
-        queryset = Reservation.objects.filter(room__listing__owner__id=self.request.user.id).order_by('start_time')
+        queryset = Reservation.objects.filter(
+            room__listing__owner__id=self.request.user.id
+        ).order_by('start_time')
+
         return queryset
 
     def get(self, request, *args, **kwargs):
-        # Render the list of reservations in an HTML template and return it as a response
+        """
+            Render the list of reservations in an HTML
+            template and return it as a response
+        """
         reservations = self.get_queryset()
 
         # Getting User Listing
         listing = Listing.objects.get(owner=request.user)
 
         html = render_to_string('report/booked_rooms.html',
-                                {'reservations': reservations, 'listing': listing.name})
+                                {
+                                    'reservations': reservations,
+                                    'listing': listing.name
+                                })
+
         response = HttpResponse(content_type='text/html')
-        response['Content-Disposition'] = 'attachment; filename="booked_rooms.html"'
+        content_dep = 'attachment; filename="booked_rooms.html"'
+        response['Content-Disposition'] = content_dep
         response.write(html)
         return response
 
@@ -122,11 +157,14 @@ class BookedRoomsHTML(generics.ListAPIView):
 # ViewSet to get Booked Rooms as TEXT
 class BookedRoomsText(generics.ListAPIView):
     serializer_class = ReservationSerializer
-    # permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUser]
 
     def get_queryset(self):
         # Get the reservations for the rooms owned by the user
-        queryset = Reservation.objects.filter(room__listing__owner__id=self.request.user.id).order_by('start_time')
+        queryset = Reservation.objects.filter(
+            room__listing__owner__id=self.request.user.id
+        ).order_by('start_time')
+
         return queryset
 
     def get(self, request, *args, **kwargs):
@@ -134,12 +172,17 @@ class BookedRoomsText(generics.ListAPIView):
         queryset = self.get_queryset()
 
         # Create the text response
-        response_data = '\n'.join([(f"Room {reservation.room.room_number}: " +
-                                    f"{reservation.name} ({reservation.start_time.strftime('%Y-%m-%d %H:%M')} - " +
-                                    f"{reservation.end_time.strftime('%Y-%m-%d %H:%M')})")
-                                   for reservation in queryset])
+        response_data = '\n'.join(
+            [
+                f"Room {reservation.room.room_number}: " +
+                f"{reservation.name} " +
+                f"({reservation.start_time.strftime('%Y-%m-%d %H:%M')} - " +
+                f"{reservation.end_time.strftime('%Y-%m-%d %H:%M')})"
+                for reservation in queryset
+            ])
 
         response = HttpResponse(content_type='text/plain')
-        response['Content-Disposition'] = 'attachment; filename="booked_rooms.txt"'
+        content_dep = 'attachment; filename="booked_rooms.txt"'
+        response['Content-Disposition'] = content_dep
         response.write(response_data)
         return response
