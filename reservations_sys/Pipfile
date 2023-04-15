@@ -9,6 +9,7 @@ python-decouple = "*"
 djangorestframework = "*"
 psycopg2 = "*"
 drf-nested-routers = "*"
+pytest = "*"
 
 [dev-packages]
 
