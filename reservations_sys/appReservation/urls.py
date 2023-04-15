@@ -28,4 +28,6 @@ urlpatterns = [
     path('', include(reservation_router.urls)),
     # Include the urls for the RoomViewSet not nested under any other view set
     path('rooms/', include(rooms_router.urls)),
+    # View for generating an HTML report of booked rooms for the logged in user's listings
+    path('booked-rooms/html/', views.BookedRoomsHTML.as_view(), name='booked_rooms_html'),
 ]

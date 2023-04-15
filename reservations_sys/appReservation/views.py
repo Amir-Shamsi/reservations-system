@@ -93,3 +93,29 @@ class RoomViewSet(viewsets.ModelViewSet):
         else:
             return super().get_serializer_class()
 
+
+# ViewSet to get Booked Rooms as HTML
+class BookedRoomsHTML(generics.ListAPIView):
+    serializer_class = ReservationSerializer
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        # Get the reservations for the rooms owned by the user
+        queryset = Reservation.objects.filter(room__listing__owner__id=self.request.user.id).order_by('start_time')
+        return queryset
+
+    def get(self, request, *args, **kwargs):
+        # Render the list of reservations in an HTML template and return it as a response
+        reservations = self.get_queryset()
+
+        # Getting User Listing
+        listing = Listing.objects.get(owner=request.user)
+
+        html = render_to_string('report/booked_rooms.html',
+                                {'reservations': reservations, 'listing': listing.name})
+        response = HttpResponse(content_type='text/html')
+        response['Content-Disposition'] = 'attachment; filename="booked_rooms.html"'
+        response.write(html)
+        return response
+
+

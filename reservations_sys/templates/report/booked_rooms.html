@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #eeeeee;
+        }
+    </style>
+</head>
+<body>
+
+<h2>{{listing}}'s Reservation</h2>
+
+<table>
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">Room Number</th>
+        <th scope="col">Name</th>
+        <th scope="col">Start Time</th>
+        <th scope="col">End Time</th>
+    </tr>
+    {% for reservation in reservations %}
+    <tr>
+        <th scope="row">{{ forloop.counter }}</th>
+        <td>{{ reservation.room }}</td>
+        <td>{{ reservation.name }}</td>
+        <td>{{ reservation.start_time }}</td>
+        <td>{{ reservation.end_time }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>
+
