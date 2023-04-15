@@ -54,3 +54,88 @@ class AppReservationTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()['count'], 2)
+
+    def test_get_listing_available_rooms(self):
+        # Test to get available rooms for a listing
+        url = f'/listings/{self.listing1.pk}/rooms/'
+        response = client.post(url, {'start_time': datetime(2023, 4, 20, 0, 0, 0, 0, tzinfo=pytz.UTC),
+                                     'end_time': datetime(2023, 4, 25, 12, 0, 0, 0, tzinfo=pytz.UTC)})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 1)
+
+    def test_get_available_rooms(self):
+        # Test to get available rooms for a listing
+        url = f'/rooms/list/'
+        response = client.post(url, {'start_time': datetime(2023, 4, 20, 0, 0, 0, 0, tzinfo=pytz.UTC),
+                                     'end_time': datetime(2023, 4, 25, 12, 0, 0, 0, tzinfo=pytz.UTC)})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 2)
+
+    def test_create_reservation(self):
+        # Test to create a reservation for a room
+        url = f'/listings/{self.listing1.pk}/rooms/{self.room1.pk}/reserve/'
+        data = {
+            'name': 'Test Reservation',
+            'start_time': '2023-04-20T12:00:00Z',
+            'end_time': '2023-04-25T12:00:00Z'
+        }
+        response = client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['name'], 'Test Reservation')
+
+    def test_create_reservation_conflict(self):
+        # Test to create a reservation for a room with conflicting time
+        url = f'/listings/{self.listing1.pk}/rooms/{self.room1.pk}/reserve/'
+        data = {
+            'name': 'Test Reservation',
+            'start_time': '2023-04-22T12:00:00Z',
+            'end_time': '2023-04-23T12:00:00Z'
+        }
+
+        # Create a reservation with conflicting time first
+        reservation = Reservation.objects.create(
+            room=self.room1,
+            name='Test Reservation Conflict',
+            start_time='2023-04-21T12:00:00Z',
+            end_time='2023-04-24T12:00:00Z'
+        )
+
+        response = client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_get_booked_rooms_text(self):
+        url = '/booked-rooms/text/'
+
+        # Loging as listing owner
+        self.client.login(username='test2', password='testpassword')
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['Content-Type'], 'text/plain')
+        self.assertIn(
+            f"Room {self.reservation1.room.room_number}: {self.reservation1.name} "
+            f"({self.reservation1.start_time.strftime('%Y-%m-%d %H:%M')} - "
+            f"{self.reservation1.end_time.strftime('%Y-%m-%d %H:%M')})",
+            response.content.decode())
+
+    def test_booked_rooms_html(self):
+        url = '/booked-rooms/html/'
+        # Loging as listing owner
+        self.client.login(username='test2', password='testpassword')
+
+        response = self.client.get(url)
+
+        # Check response status code and content type
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['content-type'], 'text/html')
+
+        # Check response content
+        expected_html = render_to_string('report/booked_rooms.html',
+                                         {'reservations': [self.reservation1],
+                                          'listing': self.listing2.name})
+
+        self.maxDiff = None
+        self.assertMultiLineEqual(response.content.decode(), expected_html)
