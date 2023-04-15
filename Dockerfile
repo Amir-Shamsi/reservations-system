@@ -14,8 +14,8 @@ RUN rm -rf /var/lib/apt/lists/*
 # install dependencies
 RUN pip install --upgrade pip pipenv flake8
 
-COPY Pipfile* ./
-RUN pipenv install  --ignore-pipfile
+COPY ./reservations_sys/Pipfile* .
+RUN pipenv install --system --ignore-pipfile
 
 COPY . .
 

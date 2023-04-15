@@ -12,13 +12,15 @@ services:
         context: .
     command: >
       sh -c "
-             python ./reservations_sys/manage.py makemigrations &&
-             python ./reservations_sys/manage.py migrate &&
-             python ./reservations_sys/manage.py runserver 0.0.0.0:8000"
+             python reservations_sys/manage.py makemigrations &&
+             python reservations_sys/manage.py migrate &&
+             python reservations_sys/manage.py runserver 0.0.0.0:8000"
     ports:
       - "8000:8000"
     env_file:
       - reservations_sys/.env
+    environment:
+      PYTHONPATH: "/usr/src/app"
     volumes:
       - .:/usr/src/app
 
