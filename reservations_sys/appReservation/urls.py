@@ -14,6 +14,11 @@ listings_router.register(r'rooms', views.RoomViewSet, basename='listing-rooms')
 rooms_router = routers.DefaultRouter()
 rooms_router.register(r'list', views.RoomViewSet, basename='rooms-list')
 
+# Create a nested router for the ReservationViewSet, nested under the RoomViewSet, which is nested under the ListingViewSet
+reservation_router = routers.NestedDefaultRouter(listings_router, r'rooms', lookup='room')
+reservation_router.register(r'reserve', views.ReservationViewSet, basename='reserve')
+
+# Define urlpatterns for the API views
 urlpatterns = [
     # Include the urls for the ListingViewSet
     path('', include(router.urls)),

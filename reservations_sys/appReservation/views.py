@@ -19,6 +19,37 @@ class ListingViewSet(viewsets.ModelViewSet):
     pagination_class = Pagination
 
 
+# ViewSet for Reservation
+class ReservationViewSet(viewsets.ModelViewSet):  # Done
+    serializer_class = ReservationSerializer
+    queryset = []
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Get the room ID from the URL, if it exists
+        room_pk = self.kwargs.get('room_pk')
+        room = get_object_or_404(Room, pk=room_pk)
+
+        start_time = serializer.validated_data['start_time']
+        end_time = serializer.validated_data['end_time']
+
+        # Checking if the room is already reserved for the requested time
+        if Reservation.objects.filter(room=room, start_time__lt=end_time, end_time__gt=start_time).exists():
+            return Response(
+                {'error': 'This room is already reserved for the requested time.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Saving the reservation instance
+        reservation = serializer.save(room=room)
+        headers = self.get_success_headers(serializer.data)
+        reservation_data = self.serializer_class(reservation, context={'room': room}).data
+
+        return Response({**reservation_data, 'room': RoomSerializer(room).data}, status=status.HTTP_201_CREATED,
+                        headers=headers)
+
 # ViewSet to get Rooms
 class RoomViewSet(viewsets.ModelViewSet):
     pagination_class = Pagination
