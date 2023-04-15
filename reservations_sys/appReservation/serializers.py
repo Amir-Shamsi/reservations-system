@@ -10,3 +10,9 @@ class RoomSerializer(serializers.ModelSerializer):
         fields = ['id', 'room_number', 'price_per_night', 'listing']
 
 
+# Define Listing serializer
+class ListingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Listing
+        fields = ['id', 'name']
+
