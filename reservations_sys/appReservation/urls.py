@@ -30,4 +30,6 @@ urlpatterns = [
     path('rooms/', include(rooms_router.urls)),
     # View for generating an HTML report of booked rooms for the logged in user's listings
     path('booked-rooms/html/', views.BookedRoomsHTML.as_view(), name='booked_rooms_html'),
+    # View for generating a plain text report of booked rooms for the logged in user's listings
+    path('booked-rooms/text/', views.BookedRoomsText.as_view(), name='booked_rooms_text'),
 ]

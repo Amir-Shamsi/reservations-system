@@ -119,3 +119,27 @@ class BookedRoomsHTML(generics.ListAPIView):
         return response
 
 
+# ViewSet to get Booked Rooms as TEXT
+class BookedRoomsText(generics.ListAPIView):
+    serializer_class = ReservationSerializer
+    # permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        # Get the reservations for the rooms owned by the user
+        queryset = Reservation.objects.filter(room__listing__owner__id=self.request.user.id).order_by('start_time')
+        return queryset
+
+    def get(self, request, *args, **kwargs):
+        # Get listing owner reservation list
+        queryset = self.get_queryset()
+
+        # Create the text response
+        response_data = '\n'.join([(f"Room {reservation.room.room_number}: " +
+                                    f"{reservation.name} ({reservation.start_time.strftime('%Y-%m-%d %H:%M')} - " +
+                                    f"{reservation.end_time.strftime('%Y-%m-%d %H:%M')})")
+                                   for reservation in queryset])
+
+        response = HttpResponse(content_type='text/plain')
+        response['Content-Disposition'] = 'attachment; filename="booked_rooms.txt"'
+        response.write(response_data)
+        return response
