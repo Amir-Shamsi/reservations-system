@@ -15,6 +15,10 @@ from .serializers import \
     RoomAvailabilitySerializer
 from .models import Listing, Reservation, Room
 from .serializers import RoomSerializer
+import logging
+
+
+logger = logging.getLogger('app1')
 
 
 # ViewSet for Listing
@@ -43,6 +47,7 @@ class ReservationViewSet(viewsets.ModelViewSet):  # Done
         # Checking if the room is already reserved for the requested time
         if is_reservation_exists(start_time, end_time, room):
             error_msg = 'This room is already reserved for the requested time.'
+            logger.error(error_msg)
             return Response(
                 {'error': error_msg},
                 status=status.HTTP_400_BAD_REQUEST)
@@ -54,6 +59,8 @@ class ReservationViewSet(viewsets.ModelViewSet):  # Done
             reservation,
             context={'room': room}
         ).data
+
+        logger.info("Reservation created successfully")
 
         return Response({
             **reservation_data,
@@ -77,6 +84,8 @@ class RoomViewSet(viewsets.ModelViewSet):
         return get_list_or_404(queryset)
 
     def create(self, request, *args, **kwargs):
+        logger.info("Getting available rooms")
+
         # Validate input data and get start_time and end_time
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -144,6 +153,11 @@ class BookedRoomsHTML(generics.ListAPIView):
         response['Content-Disposition'] = content_dep
         response.write(html)
 
+        logger.info(f'User: '
+                    f'{request.user.first_name} '
+                    f'{request.user.last_name} '
+                    f'requested booked rooms report as HTML file')
+
         return response
 
 
@@ -178,5 +192,10 @@ class BookedRoomsText(generics.ListAPIView):
         content_dep = 'attachment; filename="booked_rooms.txt"'
         response['Content-Disposition'] = content_dep
         response.write(response_data)
+
+        logger.info(f'User: '
+                    f'{request.user.first_name} '
+                    f'{request.user.last_name} '
+                    f'requested booked rooms report as text file')
 
         return response
