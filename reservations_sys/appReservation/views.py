@@ -43,9 +43,8 @@ class ReservationViewSet(viewsets.ModelViewSet):  # Done
         # Checking if the room is already reserved for the requested time
         if is_reservation_exists(start_time, end_time, room):
             error_msg = 'This room is already reserved for the requested time.'
-            return Response({
-                    'error': error_msg
-                },
+            return Response(
+                {'error': error_msg},
                 status=status.HTTP_400_BAD_REQUEST)
 
         # Saving the reservation instance
@@ -98,7 +97,7 @@ class RoomViewSet(viewsets.ModelViewSet):
 
         # Serialize the paginated queryset and return the response
         serializer = RoomSerializer(paginated_queryset, many=True)
-        
+
         return self.get_paginated_response(serializer.data)
 
     def get_serializer_class(self):
