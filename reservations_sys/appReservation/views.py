@@ -6,11 +6,13 @@ from rest_framework import viewsets, status, generics
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from .paginations import Pagination
+from .queries import \
+    get_available_rooms,\
+    is_reservation_exists
 from .serializers import \
     ListingSerializer, \
     ReservationSerializer, \
     RoomAvailabilitySerializer
-from django.db.models import Q
 from .models import Listing, Reservation, Room
 from .serializers import RoomSerializer
 
@@ -39,18 +41,12 @@ class ReservationViewSet(viewsets.ModelViewSet):  # Done
         end_time = serializer.validated_data['end_time']
 
         # Checking if the room is already reserved for the requested time
-        if Reservation.objects.filter(
-                room=room,
-                start_time__lt=end_time,
-                end_time__gt=start_time
-        ).exists():
+        if is_reservation_exists(start_time, end_time, room):
             error_msg = 'This room is already reserved for the requested time.'
-            return Response(
-                {
+            return Response({
                     'error': error_msg
                 },
-                status=status.HTTP_400_BAD_REQUEST
-            )
+                status=status.HTTP_400_BAD_REQUEST)
 
         # Saving the reservation instance
         reservation = serializer.save(room=room)
@@ -89,25 +85,21 @@ class RoomViewSet(viewsets.ModelViewSet):
         start_time = serializer.validated_data['start_time']
         end_time = serializer.validated_data['end_time']
 
-        # Get the list of available rooms for the given time range
-        queryset = Room.objects.filter(
-            ~Q(
-                reservation__start_time__lt=end_time,
-                reservation__end_time__gt=start_time
-            )
+        listing_pk = self.kwargs.get('listing_pk')
+
+        queryset = get_available_rooms(
+            start_time=start_time,
+            end_time=end_time,
+            listing_pk=listing_pk
         )
 
-        # If a listing ID was provided in the URL,
-        # filter the queryset by that ID
-        listing_pk = self.kwargs.get('listing_pk')
-        if listing_pk:
-            queryset = queryset.filter(
-                listing_id=self.kwargs['listing_pk']
-            )
+        # Using pagination for queryset
+        paginated_queryset = self.paginate_queryset(queryset)
 
-        # Serialize the queryset and return the response
-        serializer = RoomSerializer(queryset, many=True)
-        return Response(serializer.data)
+        # Serialize the paginated queryset and return the response
+        serializer = RoomSerializer(paginated_queryset, many=True)
+        
+        return self.get_paginated_response(serializer.data)
 
     def get_serializer_class(self):
         # Return a different serializer class depending on the request method
@@ -152,6 +144,7 @@ class BookedRoomsHTML(generics.ListAPIView):
         content_dep = 'attachment; filename="booked_rooms.html"'
         response['Content-Disposition'] = content_dep
         response.write(html)
+
         return response
 
 
@@ -186,4 +179,5 @@ class BookedRoomsText(generics.ListAPIView):
         content_dep = 'attachment; filename="booked_rooms.txt"'
         response['Content-Disposition'] = content_dep
         response.write(response_data)
+
         return response
